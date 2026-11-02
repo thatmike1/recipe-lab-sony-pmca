@@ -104,6 +104,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private final PreviewPace pace = new PreviewPace();
     private final Runnable pacedPreview = new Runnable() { public void run() { previewNow(); } };
     private boolean previewWaiting = false;                     // a click's look has not reached the camera yet
+    private long keyMade, keyStart;                             // the walking key in hand: when it was made, when the app reached it
     private int paceIdx = PreviewPace.DEFAULT;                  // developer menu: how the camera follows the wheel
     // press / hold of the three keys that have both: centre (pick / favourite), MENU (exit / app menu), trash (hide / factory)
     private final Keys.Hold enter = new Keys.Hold(), menuKeyHold = new Keys.Hold(), trash = new Keys.Hold();
@@ -1195,7 +1196,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void followPreview() {
         handler.removeCallbacks(pacedPreview);
         int delay = PreviewPace.ms(paceIdx);
-        boolean now = pace.ask(SystemClock.uptimeMillis(), delay);
+        long at = SystemClock.uptimeMillis();
+        pace.handled(at - keyStart);
+        boolean now = pace.ask(at, keyMade, delay);
         if (delay == 0) { previewNow(); return; }                // off: every click, inside the key handler, as it always was
         previewWaiting = true;
         handler.postDelayed(pacedPreview, now ? 0 : delay);      // 0 still lets the name draw first
@@ -1216,7 +1219,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         applyPreview();
         long end = SystemClock.uptimeMillis();
         pace.applied(end, end - start);
-        if (previewOk != wasOk) render();
+        if (PreviewPace.ms(paceIdx) > 0 || previewOk != wasOk) render();   // the chips and badges paintWalk left for now
+    }
+
+    /**
+     * A click on the wheel, on screen: at a pace, only what names the recipe, and the rest follows the camera. The whole
+     * panel is more than a slow body can redraw between two clicks; off draws it all, as it always did.
+     */
+    private void paintWalk() {
+        if (PreviewPace.ms(paceIdx) == 0 || !panelUp(overlay)) { render(); return; }
+        Recipes.Recipe r = library.get(recipe);
+        name.setText(Recipes.displayName(r));
+        String original = Recipes.originalName(r);
+        nameOriginal.setText(original == null ? "" : original);
+        nameOriginal.setVisibility(original == null ? View.GONE : View.VISIBLE);
+        count.setText(Recipes.groupLabel(r.group).toUpperCase() + "   " + library.position(recipe));
+        fav.setVisibility(favs.contains(recipe) ? View.VISIBLE : View.GONE);
     }
 
     /** any key that is not walking the recipes: the shutter and the centre button must find the camera on the look on screen */
@@ -1342,7 +1360,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     /** the wheel, or left / right on the recipe line: the next recipe — after asking, when that would drop edits */
     private void nextRecipe(final int dir) {
-        unlessEditsLost(new Runnable() { public void run() { recipe = Favourites.wheel(favs, recipe, dir, library); showRecipe(); render(); followPreview(); } });
+        unlessEditsLost(new Runnable() { public void run() { recipe = Favourites.wheel(favs, recipe, dir, library); showRecipe(); paintWalk(); followPreview(); } });
     }
 
     /**
@@ -1487,7 +1505,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent e) {
         int sc = e.getScanCode();
-        if (walks(sc)) pace.keyLag(SystemClock.uptimeMillis() - e.getEventTime()); else settlePreview();
+        keyMade = e.getEventTime(); keyStart = SystemClock.uptimeMillis();
+        if (walks(sc)) pace.keyLag(keyStart - keyMade); else settlePreview();
         if (logging) return logKey(e, true);
         if (e.getRepeatCount() > 0 && oneShot(sc)) return true;  // held Fn / trash / MENU / centre act once
         if (isMenu(sc) && menuKeyHold.isDown()) return true;     // still the press that opened the menu: not a second press
