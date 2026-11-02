@@ -178,6 +178,8 @@ final class TextZhHant {
         { "dev_locks_detail", "檢查配方會寫入的每個槽位是否唯讀" },
         { "dev_samples_detail", "依表格順序為每個配方拍攝一張 JPEG——MENU 停止" },
         { "dev_settle_detail", "套用配方後等待一段時間再觸發快門" },
+        { "dev_preview_pace", "預覽節奏" },
+        { "dev_preview_pace_detail", "關閉時每次轉動都套用，否則等轉盤停下再更新預覽" },
         { "dev_keys_detail", "顯示每個按鍵的掃描碼——長按 MENU 離開" },
         { "dev_no_preview", "沒有即時預覽——樣片拍攝需要相機" },
         { "dev_progress", "正在拍攝 %1$d / %2$d · %3$s——MENU 停止" },

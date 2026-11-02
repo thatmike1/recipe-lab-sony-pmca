@@ -31,13 +31,13 @@ final class DevTools {
     static final int IC_BROWSE = 0, IC_NEW = 1, IC_PANEL = 2, IC_LANGUAGE = 3, IC_RESET = 4, IC_ABOUT = 5, IC_DEV = 6,
             IC_SNAPSHOT = 7, IC_LOCK = 8, IC_SAMPLES = 9, IC_CLOCK = 10, IC_KEYS = 11, IC_REPORT = 12, IC_TRANSFER = 13, IC_SYNC = 14;
     private static final int[] APP_ICONS = { IC_BROWSE, IC_NEW, IC_TRANSFER, IC_SYNC, IC_PANEL, IC_LANGUAGE, IC_RESET, IC_REPORT, IC_ABOUT, IC_DEV };
-    private static final int[] DEV_ICONS = { IC_SNAPSHOT, IC_LOCK, IC_SAMPLES, IC_CLOCK, IC_KEYS };
+    private static final int[] DEV_ICONS = { IC_SNAPSHOT, IC_LOCK, IC_SAMPLES, IC_CLOCK, IC_KEYS, IC_SYNC };
 
     /** the icon of each row of a level, in row order */
     static int[] icons(int level) { return (level == LEVEL_APP ? APP_ICONS : DEV_ICONS).clone(); }
 
     /** developer menu rows, in display order */
-    static final int ROW_SNAPSHOT = 0, ROW_LOCKS = 1, ROW_SAMPLES = 2, ROW_SETTLE = 3, ROW_KEYS = 4, ROWS = 5;
+    static final int ROW_SNAPSHOT = 0, ROW_LOCKS = 1, ROW_SAMPLES = 2, ROW_SETTLE = 3, ROW_KEYS = 4, ROW_PACE = 5, ROWS = 6;
 
     /**
      * Settle delays to pick from, in ms: how long the preview pipeline gets after a recipe is applied before the
@@ -286,6 +286,7 @@ final class DevTools {
             case ROW_SAMPLES: return Lang.t("dev_shoot_samples", Recipes.ALL.length);
             case ROW_SETTLE: return Lang.t("dev_settle_delay");
             case ROW_KEYS: return Lang.t("dev_key_logger");
+            case ROW_PACE: return Lang.t("dev_preview_pace");
             default: return "?" + row;
         }
     }
@@ -298,12 +299,13 @@ final class DevTools {
             case ROW_SAMPLES: return Lang.t("dev_samples_detail");
             case ROW_SETTLE: return Lang.t("dev_settle_detail");
             case ROW_KEYS: return Lang.t("dev_keys_detail");
+            case ROW_PACE: return Lang.t("dev_preview_pace_detail");
             default: return "";
         }
     }
 
     /** the value a developer menu row shows at its right edge, which left / right change in place; null for none */
-    static String rowValue(int row, int settle) { return row == ROW_SETTLE ? settleLabel(settle) : null; }
+    static String rowValue(int row, int settle, int pace) { return row == ROW_SETTLE ? settleLabel(settle) : row == ROW_PACE ? paceLabel(pace) : null; }
 
     // ------------------------------------------------------------ the settle delay
     /** a stored delay index brought back into the table */
@@ -316,6 +318,12 @@ final class DevTools {
     static String settleLabel(int idx) {
         int ms = SETTLE_MS[clampSettle(idx)];
         return Lang.t("value_seconds", (ms / 1000) + "." + (ms % 1000) / 100);
+    }
+
+    /** a preview pace as the menu shows it: "off", or "0.15 s" */
+    static String paceLabel(int idx) {
+        int ms = PreviewPace.ms(idx);
+        return ms == 0 ? Lang.t("value_off") : Lang.t("value_seconds", "0." + ms / 10);
     }
 
     // ------------------------------------------------------------ the sample run

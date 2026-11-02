@@ -39,6 +39,30 @@ class FavouritesTest {
         assertEquals(f, Favourites.decode("Kodak Portra 400|Velvia|Acros", LIB));
     }
 
+    @Test void theWheelStaysAmongTheFavouritesAndWraps() {
+        List<Integer> f = favs("Velvia", "Acros", "Kodak Portra 400");
+        assertEquals(indexOf("Acros"), Favourites.wheel(f, indexOf("Velvia"), +1, LIB));
+        assertEquals(indexOf("Velvia"), Favourites.wheel(f, indexOf("Kodak Portra 400"), +1, LIB));
+        assertEquals(indexOf("Kodak Portra 400"), Favourites.wheel(f, indexOf("Velvia"), -1, LIB));
+    }
+
+    @Test void theWheelFromElsewhereLandsOnTheFirstFavourite() {
+        assertEquals(indexOf("Velvia"), Favourites.wheel(favs("Velvia", "Acros"), indexOf("Kodak Portra 400"), +1, LIB));
+    }
+
+    @Test void withoutFavouritesTheWheelWalksEveryRecipe() {
+        List<Integer> none = new ArrayList<Integer>();
+        assertEquals(LIB.next(5, +1), Favourites.wheel(none, 5, +1, LIB));
+        assertEquals(LIB.next(0, -1), Favourites.wheel(none, 0, -1, LIB));
+    }
+
+    @Test void theAppOpensOnAFavourite() {
+        List<Integer> f = favs("Velvia", "Acros");
+        assertEquals(indexOf("Acros"), Favourites.opening(f, indexOf("Acros")), "the last one picked, when it is marked");
+        assertEquals(indexOf("Velvia"), Favourites.opening(f, indexOf("Kodak Portra 400")), "else the first mark");
+        assertEquals(7, Favourites.opening(new ArrayList<Integer>(), 7), "nothing marked: as before");
+    }
+
     @Test void nothingStoredMeansNoFavourites() {
         assertTrue(Favourites.decode(null, LIB).isEmpty());
         assertTrue(Favourites.decode("", LIB).isEmpty());

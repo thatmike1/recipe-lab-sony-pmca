@@ -175,6 +175,8 @@ final class TextKo {
         { "dev_locks_detail", "레시피가 쓰는 각 슬롯의 읽기 전용 표시 확인" },
         { "dev_samples_detail", "레시피마다 JPEG 한 장, 표 순서대로 — MENU로 중지" },
         { "dev_settle_detail", "레시피를 적용한 뒤 셔터를 누르기 전까지 대기" },
+        { "dev_preview_pace", "미리보기 간격" },
+        { "dev_preview_pace_detail", "끄면 매번 적용, 켜면 휠이 멈춘 뒤 갱신" },
         { "dev_keys_detail", "각 키의 스캔 코드 표시 — MENU 길게 눌러 종료" },
         { "dev_no_preview", "라이브 뷰 없음 — 샘플 촬영에는 카메라가 필요합니다" },
         { "dev_progress", "촬영 중 %1$d / %2$d · %3$s — MENU로 중지" },

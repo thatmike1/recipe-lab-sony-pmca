@@ -35,6 +35,15 @@
 
 ---
 
+> **Personal fork for a NEX-6.** Two changes from upstream Recipe Lab:
+>
+> - **Favourites first.** With at least one recipe starred, the app opens on a favourite and the wheel walks only the favourites, with live preview. Every recipe is still in the list (Fn). With nothing starred it behaves as upstream.
+> - **A wheel that keeps up.** The name moves on every click, and the camera follows when the wheel pauses, instead of one camera round trip per click. Hold MENU → Developer → Preview pace sets the pause; *off* is upstream's behaviour. Each session leaves a `pace ...` line in `RECIPLAB/LOGS/LOG.TXT` with the apply cost and key lag.
+>
+> Built with `./build.sh` and a local throwaway key, so it cannot install over the upstream app: uninstall that first, which also clears your stars.
+
+---
+
 **Contents**
 
 - [What it is](#what-it-is)

@@ -141,6 +141,16 @@ final class Favourites {
         return favs.get((pos + favs.size() + dir) % favs.size());
     }
 
+    /** the wheel on the recipe line: among the favourites once there are any, every recipe until then */
+    static int wheel(List<Integer> favs, int recipe, int dir, Library lib) {
+        return favs.isEmpty() ? lib.next(recipe, dir) : next(favs, recipe, dir);
+    }
+
+    /** the recipe the app opens on: {@code recipe} when it is a favourite or there are none, else the first favourite */
+    static int opening(List<Integer> favs, int recipe) {
+        return favs.isEmpty() || favs.contains(recipe) ? recipe : favs.get(0);
+    }
+
     /** the custom recipe after / before {@code recipe}, A to Z, wrapping; the first one from anywhere else; -1 when none */
     static int nextCustom(int recipe, int dir, Library lib) {
         int n = lib.customCount();

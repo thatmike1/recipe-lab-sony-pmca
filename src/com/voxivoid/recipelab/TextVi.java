@@ -175,6 +175,8 @@ final class TextVi {
         { "dev_locks_detail", "Kiểm tra cờ chỉ đọc của mọi ô công thức ghi vào" },
         { "dev_samples_detail", "Một JPEG mỗi công thức, theo thứ tự bảng — MENU để dừng" },
         { "dev_settle_detail", "Chờ sau khi áp dụng công thức rồi mới chụp" },
+        { "dev_preview_pace", "Nhịp xem trước" },
+        { "dev_preview_pace_detail", "Tắt: áp dụng mỗi lần xoay; bật: chờ bánh xe dừng rồi cập nhật" },
         { "dev_keys_detail", "Hiện mã quét của mỗi phím — giữ MENU để thoát" },
         { "dev_no_preview", "Không xem trực tiếp — chụp mẫu cần máy" },
         { "dev_progress", "Đang chụp %1$d / %2$d  ·  %3$s   —   MENU để dừng" },

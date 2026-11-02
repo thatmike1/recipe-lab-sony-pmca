@@ -175,6 +175,8 @@ final class TextJa {
         { "dev_locks_detail", "レシピが書き込む各枠の読み取り専用フラグを確認" },
         { "dev_samples_detail", "レシピごとにJPEGを1枚、表の順に撮影——MENUで停止" },
         { "dev_settle_detail", "レシピを適用してからシャッターを切るまで待つ" },
+        { "dev_preview_pace", "プレビュー間隔" },
+        { "dev_preview_pace_detail", "オフは毎回適用、それ以外はダイヤルが止まってから更新" },
         { "dev_keys_detail", "各キーのスキャンコードを表示——MENU長押しで終了" },
         { "dev_no_preview", "ライブビューなし——サンプル撮影にはカメラが必要です" },
         { "dev_progress", "撮影中 %1$d / %2$d  ·  %3$s   —   MENUで停止" },

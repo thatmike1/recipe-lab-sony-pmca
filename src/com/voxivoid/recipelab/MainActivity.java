@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
@@ -100,6 +101,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private final View[] chip = new View[N];
     private final Handler handler = new Handler();
     private final Runnable hideToast = new Runnable() { public void run() { toast.setVisibility(View.GONE); } };
+    private final PreviewPace pace = new PreviewPace();
+    private final Runnable pacedPreview = new Runnable() { public void run() { previewNow(); } };
+    private boolean previewWaiting = false;                     // a click's look has not reached the camera yet
+    private int paceIdx = PreviewPace.DEFAULT;                  // developer menu: how the camera follows the wheel
     // press / hold of the three keys that have both: centre (pick / favourite), MENU (exit / app menu), trash (hide / factory)
     private final Keys.Hold enter = new Keys.Hold(), menuKeyHold = new Keys.Hold(), trash = new Keys.Hold();
     private final Runnable enterHold = new Runnable() { public void run() { if (enter.fire() == Keys.Hold.HOLD) toggleFavourite(); } };
@@ -148,6 +153,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         favStored = prefs.getString("favourites", "");
         favs = Favourites.decode(favStored, library);
         settleIdx = DevTools.clampSettle(prefs.getInt("settle", DevTools.SETTLE_DEFAULT));
+        paceIdx = PreviewPace.clamp(prefs.getInt("previewPace", PreviewPace.DEFAULT));
         langChoice = Lang.parseChoice(prefs.getString("language", null));
         panel = findViewById(R.id.panel);
         picker = (PickerView) findViewById(R.id.picker);
@@ -317,6 +323,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         reloadCustoms();                                         // the card may have been edited over USB, or swapped
         int last = library.indexOfCustom(prefs.getString("customRecipe", null));
         if (last >= 0) recipe = last;
+        recipe = Favourites.opening(favs, recipe);
         lastPreviewLog = ""; origFlat = null;
         try {
             Class<?> cx = Class.forName("com.sony.scalar.hardware.CameraEx");
@@ -340,6 +347,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     protected void onPause() {
         super.onPause();
+        handler.removeCallbacks(pacedPreview); previewWaiting = false;   // onPause sets the camera itself, below
+        if (pace.any()) { log(CardLog.INFO, pace.summary(PreviewPace.ms(paceIdx))); pace.reset(); }
         stopRun(false);                                          // a run cannot outlive the camera it shoots with
         stopTransfer();                                          // leaving the app stops Transfer to phone: hotspot off, auto power-off back
         closeMenu();
@@ -674,7 +683,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             for (int i = 0; i < n; i++) {
                 labels[i] = app ? DevTools.appLabel(i) : DevTools.rowLabel(i, snapshotTaken, settleIdx);
                 details[i] = app ? DevTools.appDetail(i) : DevTools.rowDetail(i, snapshotTaken);
-                values[i] = app ? DevTools.appValue(i, overlay, langChoice) : DevTools.rowValue(i, settleIdx);
+                values[i] = app ? DevTools.appValue(i, overlay, langChoice) : DevTools.rowValue(i, settleIdx, paceIdx);
             }
             if (app) faces[DevTools.APP_LANG] = UiFont.of(this, Lang.choiceScript(langChoice));   // 简体中文 in its own font, whatever the menu's
             boolean value = values[menuSel] != null;
@@ -721,6 +730,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             case DevTools.ROW_SAMPLES: closeMenu(); startRun(); break;
             case DevTools.ROW_SETTLE: stepMenuValue(+1); break;
             case DevTools.ROW_KEYS: closeMenu(); startLogger(); break;
+            case DevTools.ROW_PACE: stepMenuValue(+1); break;
         }
     }
 
@@ -734,6 +744,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         } else if (menuLevel == DevTools.LEVEL_DEV && menuSel == DevTools.ROW_SETTLE) {
             settleIdx = DevTools.nextSettle(settleIdx, dir);
             prefs.edit().putInt("settle", settleIdx).commit();
+        } else if (menuLevel == DevTools.LEVEL_DEV && menuSel == DevTools.ROW_PACE) {
+            paceIdx = PreviewPace.next(paceIdx, dir);
+            prefs.edit().putInt("previewPace", paceIdx).commit();
         } else return false;
         renderMenu(); render();
         return true;
@@ -1177,6 +1190,34 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     // ------------------------------------------------------------ live preview (runtime params)
+    /** a click wants its look on the camera: now, or once the wheel pauses (PreviewPace). The name is already on screen. */
+    private void followPreview() {
+        handler.removeCallbacks(pacedPreview);
+        int delay = PreviewPace.ms(paceIdx);
+        boolean now = pace.ask(SystemClock.uptimeMillis(), delay);
+        if (delay == 0) { previewNow(); return; }                // off: every click, inside the key handler, as it always was
+        previewWaiting = true;
+        handler.postDelayed(pacedPreview, now ? 0 : delay);      // 0 still lets the name draw first
+    }
+
+    /** the waiting look goes to the camera */
+    private void previewNow() {
+        handler.removeCallbacks(pacedPreview);
+        previewWaiting = false;
+        boolean wasOk = previewOk;
+        long start = SystemClock.uptimeMillis();
+        applyPreview();
+        long end = SystemClock.uptimeMillis();
+        pace.applied(end, end - start);
+        if (previewOk != wasOk) render();
+    }
+
+    /** any key that is not walking the recipes: the shutter and the centre button must find the camera on the look on screen */
+    private void settlePreview() { if (previewWaiting) previewNow(); }
+
+    /** the keys that walk the recipes or the list */
+    private boolean walks(int sc) { return turn(sc) != 0 || sc == K_LEFT || sc == K_RIGHT || sc == K_UP || sc == K_DOWN; }
+
     private void applyPreview() {
         if (camera == null) return;
         try {
@@ -1185,6 +1226,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             for (Map.Entry<String, String> e : wanted.entrySet()) p.set(e.getKey(), e.getValue());
             camera.setParameters(p);
             previewOk = true;
+            if (PreviewPace.ms(paceIdx) > 0) return;             // the read-back below is a log line that costs a camera round trip per click
             Camera.Parameters back = camera.getParameters();     // what the camera kept: a dropped value throws nothing (#104)
             Map<String, String> got = new java.util.HashMap<String, String>();
             for (String k : wanted.keySet()) got.put(k, back.get(k));
@@ -1293,7 +1335,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     /** the wheel, or left / right on the recipe line: the next recipe — after asking, when that would drop edits */
     private void nextRecipe(final int dir) {
-        unlessEditsLost(new Runnable() { public void run() { recipe = library.next(recipe, dir); showRecipe(); applyPreview(); render(); } });
+        unlessEditsLost(new Runnable() { public void run() { recipe = Favourites.wheel(favs, recipe, dir, library); showRecipe(); render(); followPreview(); } });
     }
 
     /**
@@ -1303,9 +1345,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void nextGroup(int dir) {
         browserGroup = Favourites.nextGroup(browserGroup, dir);
         int land = Favourites.landing(browserGroup, favs, library);
-        if (land >= 0) { recipe = land; showRecipe(); applyPreview(); }
+        if (land >= 0) { recipe = land; showRecipe(); }
         if (browserGroup == Favourites.CUSTOM) reportSkipped();
         render();
+        if (land >= 0) followPreview();
     }
 
     private void openBrowser(boolean open) {
@@ -1321,7 +1364,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private void nextInGroup(int dir) {
         if (browserGroup == Favourites.CUSTOM) { int to = Favourites.nextCustom(recipe, dir, library); if (to < 0) return; recipe = to; }
         else recipe = browserGroup == Favourites.GROUP ? Favourites.next(favs, recipe, dir) : Recipes.nextInGroup(recipe, dir);
-        showRecipe(); applyPreview(); render();
+        showRecipe(); render(); followPreview();
     }
 
     /** the recipe column is not reachable while the Favourites or Custom list is empty */
@@ -1436,6 +1479,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent e) {
         int sc = e.getScanCode();
+        if (walks(sc)) pace.keyLag(SystemClock.uptimeMillis() - e.getEventTime()); else settlePreview();
         if (logging) return logKey(e, true);
         if (e.getRepeatCount() > 0 && oneShot(sc)) return true;  // held Fn / trash / MENU / centre act once
         if (isMenu(sc) && menuKeyHold.isDown()) return true;     // still the press that opened the menu: not a second press

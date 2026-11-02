@@ -42,7 +42,7 @@ class DevToolsTest {
         Set<Integer> visited = new HashSet<Integer>();
         int r = DevTools.ROW_SNAPSHOT;
         for (int i = 0; i < DevTools.ROWS; i++) { visited.add(r); r = DevTools.nextRow(r, +1); }
-        assertEquals(new HashSet<Integer>(Arrays.asList(DevTools.ROW_SNAPSHOT, DevTools.ROW_LOCKS, DevTools.ROW_SAMPLES, DevTools.ROW_SETTLE, DevTools.ROW_KEYS)), visited);
+        assertEquals(new HashSet<Integer>(Arrays.asList(DevTools.ROW_SNAPSHOT, DevTools.ROW_LOCKS, DevTools.ROW_SAMPLES, DevTools.ROW_SETTLE, DevTools.ROW_KEYS, DevTools.ROW_PACE)), visited);
         assertEquals(DevTools.ROW_SNAPSHOT, r, "and comes back to the first row");
     }
 
@@ -117,9 +117,17 @@ class DevToolsTest {
 
     @Test void theSettleRowShowsItsDelayAsAValue() {
         assertEquals("Settle delay", DevTools.rowLabel(DevTools.ROW_SETTLE, false, 1));
-        assertEquals("1.2 s", DevTools.rowValue(DevTools.ROW_SETTLE, 1));
-        assertEquals("0.8 s", DevTools.rowValue(DevTools.ROW_SETTLE, 0));
-        for (int r = 0; r < DevTools.ROWS; r++) if (r != DevTools.ROW_SETTLE) assertNull(DevTools.rowValue(r, 1), "row " + r);
+        assertEquals("1.2 s", DevTools.rowValue(DevTools.ROW_SETTLE, 1, 0));
+        assertEquals("0.8 s", DevTools.rowValue(DevTools.ROW_SETTLE, 0, 0));
+        for (int r = 0; r < DevTools.ROWS; r++) if (r != DevTools.ROW_SETTLE && r != DevTools.ROW_PACE) assertNull(DevTools.rowValue(r, 1, 0), "row " + r);
+    }
+
+    @Test void thePaceRowShowsOffOrItsDelay() {
+        assertEquals("Preview pace", DevTools.rowLabel(DevTools.ROW_PACE, false, 1));
+        assertEquals("off", DevTools.rowValue(DevTools.ROW_PACE, 1, 0));
+        assertEquals("0.10 s", DevTools.rowValue(DevTools.ROW_PACE, 1, 1));
+        assertEquals("0.15 s", DevTools.rowValue(DevTools.ROW_PACE, 1, 2));
+        assertEquals("0.25 s", DevTools.rowValue(DevTools.ROW_PACE, 1, 3));
     }
 
     // ---- Transfer to phone

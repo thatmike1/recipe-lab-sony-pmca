@@ -202,6 +202,8 @@ final class TextEn {
         { "dev_locks_detail", "Test every slot a recipe writes for the read-only flag" },
         { "dev_samples_detail", "One JPEG per recipe, in table order — MENU stops the run" },
         { "dev_settle_detail", "Wait after applying a recipe before the shutter fires" },
+        { "dev_preview_pace", "Preview pace" },
+        { "dev_preview_pace_detail", "Off applies every click; otherwise the preview waits for the wheel to pause" },
         { "dev_keys_detail", "Show every key's scan code — hold MENU to leave" },
         { "dev_no_preview", "No live preview — the sample run needs the camera" },
         { "dev_progress", "Shooting %1$d / %2$d  ·  %3$s   —   MENU stops" },
