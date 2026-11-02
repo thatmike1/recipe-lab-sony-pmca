@@ -323,7 +323,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         reloadCustoms();                                         // the card may have been edited over USB, or swapped
         int last = library.indexOfCustom(prefs.getString("customRecipe", null));
         if (last >= 0) recipe = last;
-        recipe = Favourites.opening(favs, recipe);
+        if (overlay != OV_BROWSER) recipe = Favourites.opening(favs, recipe);   // the list keeps its own group and highlight
         lastPreviewLog = ""; origFlat = null;
         try {
             Class<?> cx = Class.forName("com.sony.scalar.hardware.CameraEx");
@@ -348,7 +348,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(pacedPreview); previewWaiting = false;   // onPause sets the camera itself, below
-        if (pace.any()) { log(CardLog.INFO, pace.summary(PreviewPace.ms(paceIdx))); pace.reset(); }
+        logPace();
         stopRun(false);                                          // a run cannot outlive the camera it shoots with
         stopTransfer();                                          // leaving the app stops Transfer to phone: hotspot off, auto power-off back
         closeMenu();
@@ -745,6 +745,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             settleIdx = DevTools.nextSettle(settleIdx, dir);
             prefs.edit().putInt("settle", settleIdx).commit();
         } else if (menuLevel == DevTools.LEVEL_DEV && menuSel == DevTools.ROW_PACE) {
+            logPace();                                           // what was measured so far belongs to the old pace
             paceIdx = PreviewPace.next(paceIdx, dir);
             prefs.edit().putInt("previewPace", paceIdx).commit();
         } else return false;
@@ -1200,6 +1201,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         handler.postDelayed(pacedPreview, now ? 0 : delay);      // 0 still lets the name draw first
     }
 
+    /** one line in LOG.TXT for the clicks since the last one, at the pace they were made at */
+    private void logPace() {
+        if (pace.any()) log(CardLog.INFO, pace.summary(PreviewPace.ms(paceIdx)));
+        pace.reset();
+    }
+
     /** the waiting look goes to the camera */
     private void previewNow() {
         handler.removeCallbacks(pacedPreview);
@@ -1457,6 +1464,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     /** the centre button released before the hold fired: what ENTER used to do on the press */
     private void enterUp() {
+        settlePreview();                                         // the wheel may have turned while centre was held
         handler.removeCallbacks(enterHold);
         if (enter.up() != Keys.Hold.SHORT || menuOpen) return;   // a menu opened while it was held: the release is not a pick
         switch (Params.enterAction(overlay, row, browserCol)) {
