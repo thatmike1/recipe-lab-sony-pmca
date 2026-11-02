@@ -49,6 +49,12 @@ class PreviewPaceTest {
         assertFalse(p.ask(3000, 2500, DELAY), "half a second behind: drain first");
     }
 
+    @Test void offIsNeverBehind() {
+        assertFalse(PreviewPace.behind(9000, 1000, 0), "off draws and applies every click, however late");
+        assertTrue(PreviewPace.behind(1200, 1000, DELAY));
+        assertFalse(PreviewPace.behind(1100, 1000, DELAY));
+    }
+
     @Test void aLongTurnStillCatchesUp() {
         PreviewPace p = new PreviewPace();
         p.ask(1000, 1000, DELAY);

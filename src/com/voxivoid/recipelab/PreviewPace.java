@@ -35,19 +35,22 @@ final class PreviewPace {
     /** the delay of a stored index, in ms */
     static int ms(int idx) { return DELAY_MS[clamp(idx)]; }
 
+    /** whether the app reached a click too late to spend anything on it: no camera, and no drawing, until it has caught up */
+    static boolean behind(long now, long clicked, int delay) { return delay > 0 && now - clicked > delay; }
+
     /**
      * A click made at {@code clicked} reaches the app at {@code now} and asks for a preview: true when the camera should get
      * it now, false when it should wait for {@code delay} ms of quiet. An app behind the wheel never applies: it drains.
      */
     boolean ask(long now, long clicked, int delay) {
         if (!seen) lastApplied = now;
-        boolean behind = now - clicked > delay;
+        boolean late = behind(now, clicked, delay);
         boolean quiet = !seen || clicked - lastClick >= delay;
         boolean overdue = seen && now - lastApplied >= delay * CATCH_UP;
         seen = true;
         lastClick = clicked;
         asks++;
-        return delay <= 0 || !behind && (quiet || overdue);
+        return delay <= 0 || !late && (quiet || overdue);
     }
 
     /** the camera finished, at {@code now}, after {@code tookMs} */

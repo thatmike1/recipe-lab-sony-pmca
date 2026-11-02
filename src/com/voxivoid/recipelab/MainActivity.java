@@ -1224,10 +1224,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     /**
      * A click on the wheel, on screen: at a pace, only what names the recipe, and the rest follows the camera. The whole
-     * panel is more than a slow body can redraw between two clicks; off draws it all, as it always did.
+     * panel is more than a slow body can redraw between two clicks; off draws it all, as it always did. A click the app
+     * reached late draws nothing, since the drawing is what would keep it late: the paced preview repaints once it settles.
      */
     private void paintWalk() {
         if (PreviewPace.ms(paceIdx) == 0 || !panelUp(overlay)) { render(); return; }
+        if (PreviewPace.behind(keyStart, keyMade, PreviewPace.ms(paceIdx))) return;
         Recipes.Recipe r = library.get(recipe);
         name.setText(Recipes.displayName(r));
         String original = Recipes.originalName(r);
